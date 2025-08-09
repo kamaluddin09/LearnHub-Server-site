@@ -6,13 +6,13 @@ import { connectDB } from "./utils/connectDB";
 
 dotenv.config();
 const app = express();
-const PORT = process.env.PORT || 6000; 
+const PORT = process.env.PORT || 5000; 
 
 app.use(express.json());
 
 connectDB();
 app.use(cors({
-   origin: "http://localhost:3000", // Allow only this origin
+   origin: "http://localhost:5173", // Allow only this origin
   credentials: true,
 }));
 //routes
