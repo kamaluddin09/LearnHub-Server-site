@@ -1,36 +1,82 @@
-// import { Request, Response } from 'express';
-// import { CourseModel } from "../models/coursemodel";
-// import { formatResponse } from '../utils/formatResponse';
+import { Request, Response } from "express";
+import { CourseModel } from "../models/coursemodel";
+import { formatResponse } from "../utils/formatResponse";
+import { AuthRequest } from "../middelwares/authmiddelware";
 
-// export const createCourse = async (req: any, res: Response) => {
-//   const { title, description, price } = req.body;
-//   const course = await CourseModel.create({ title, description, price, instructor: req.user._id });
-//   res.json(formatResponse(course, 'Course created'));
-// };
+export const createCourse = async (req: AuthRequest, res: Response) => {
+  try {
+    console.log("User from req:", req.user);
+    const { title, description, price } = req.body;
 
-// export const listCourses = async (req: Request, res: Response) => {
-//   const courses = await CourseModel.find().populate('instructor', 'name email');
-//   res.json(formatResponse(courses, 'Courses'));
-// };
+    if (!title || !description || !price) {
+      return res.status(400).json({ message: "Title, description, and price are required" });
+    }
 
-// export const getCourse = async (req: Request, res: Response) => {
-//   const course = await CourseModel.findById(req.params.id).populate('lessons').populate('instructor', 'name email');
-//   res.json(formatResponse(course, 'Course'));
-// };
+    // Uploaded files paths
+    const thumbnailPath = req.files && (req.files as any).thumbnail ? (req.files as any).thumbnail[0].path : null;
+    const documentPath = req.files && (req.files as any).document ? (req.files as any).document[0].path : null;
+    const videoPath = req.files && (req.files as any).video ? (req.files as any).video[0].path : null;
 
-// export const updateCourse = async (req: any, res: Response) => {
-//   const course = await CourseModel.findById(req.params.id);
-//   if (!course) return res.status(404).json({ message: 'Course not found' });
-//   if (course.instructor.toString() !== req.user._id.toString() && req.user.role !== 'admin') return res.status(403).json({ message: 'Not allowed' });
-//   Object.assign(course, req.body);
-//   await course.save();
-//   res.json(formatResponse(course, 'Updated'));
-// };
+    const course = await CourseModel.create({
+      title,
+      description,
+      price,
+      instructor: req.user?._id,
+      thumbnail: thumbnailPath,
+      document: documentPath,
+      video: videoPath
+    });
 
-// export const deleteCourse = async (req: any, res: Response) => {
-//   const course = await CourseModel.findById(req.params.id);
-//   if (!course) return res.status(404).json({ message: 'Course not found' });
-//   if (course.instructor.toString() !== req.user._id.toString() && req.user.role !== 'admin') return res.status(403).json({ message: 'Not allowed' });
-//   await course.remove();
-//   res.json(formatResponse(null, 'Deleted'));
-// };
+    return res.status(201).json(formatResponse(course, "Course created successfully"));
+  } catch (error) {
+    return res.status(500).json({ message: "Internal server error", error });
+  }
+};
+
+export const listCourses = async (req: Request, res: Response) => {
+  try {
+    const courses = await CourseModel.find().populate("instructor", "name email");
+    return res.status(200).json(formatResponse(courses, "Courses fetched successfully"));
+  } catch (error) {
+    return res.status(500).json({ message: "Internal server error", error });
+  }
+};
+
+export const getCourse = async (req: Request, res: Response) => {
+  try {
+    const course = await CourseModel.findById(req.params.id)
+      .populate("lessons")
+      .populate("instructor", "name email");
+
+    if (!course) {
+      return res.status(404).json({ message: "Course not found" });
+    }
+
+    return res.status(200).json(formatResponse(course, "Course fetched successfully"));
+  } catch (error) {
+    return res.status(500).json({ message: "Internal server error", error });
+  }
+};
+
+export const updateCourse = async (req: AuthRequest, res: Response) => {
+  try {
+    const course = await CourseModel.findById(req.params.id);
+    if (!course) {
+      return res.status(404).json({ message: "Course not found" });
+    }
+
+    if (
+      course.instructor.toString() !== req.user?._id.toString() &&
+      req.user?.role !== "admin"
+    ) {
+      return res.status(403).json({ message: "You are not allowed to update this course" });
+    }
+
+    Object.assign(course, req.body);
+    await course.save();
+
+    return res.status(200).json(formatResponse(course, "Course updated successfully"));
+  } catch (error) {
+    return res.status(500).json({ message: "Internal server error", error });
+  }
+};
