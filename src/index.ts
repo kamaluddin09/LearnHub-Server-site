@@ -35,7 +35,7 @@ app.use(express.json());
 connectDB();
 
 app.use(cors({
-   origin: "http://localhost:5000", // Allow only this origin
+   origin: "http://localhost:5173", // Allow only this origin
   credentials: true,
 }));
 

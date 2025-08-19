@@ -17,3 +17,4 @@ router.put("/:id", authenticateUser, updateLesson);
 router.delete("/:id", authenticateUser, deleteLesson);
 
 export default router;
+
